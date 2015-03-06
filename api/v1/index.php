@@ -591,54 +591,59 @@ $app->post('/people', function() use ($app) {
 //  Returns: record as created
 //
 $app->post('/device', function() use ($app) {
-    global $person;
+	global $person;
 
-    $person->GetUserRights();
-    if ( !$person->ContactAdmin ) {
-        $response['error'] = true;
-        $response['errorcode'] = 400;
-        $response['message'] = "Insufficient privilege level";
-        echoRespnse(400, $response);
-        $app->stop();
-    }
+	$person->GetUserRights();
+	if ( !$person->ContactAdmin ) {
+		$response['error'] = true;
+		$response['errorcode'] = 400;
+		$response['message'] = "Insufficient privilege level";
+		echoRespnse(400, $response);
+		$app->stop();
+	}
 
-    // Only one field is required - all others are optional
-    verifyRequiredParams(array('label'));
+	// Only one field is required - all others are optional
+	verifyRequiredParams(array('label', 'assettag'));
 
-    $response = array();
-    $d = new Device();
-    $d->Label = $app->request->post('label');
+	$response = array();
+	$d = new Device();
+	if ( $d->GetDeviceByAssetTag($app->request->post('assettag')) ) {
+		$response['error'] = true;
+		$response['errorcode'] = 403;
+		$response['message'] = 'Device AssetTag already in database.  Use the update API to modify record.';
+		echoRespnse(403, $response );
+	} else {
+		// Slim Framework will simply return null for any variables that were not passed, so this is safe to call without blowing up the script
+		$d->Label = $app->request->post('label');
+		$d->SerialNo = $app->request->post('serialno');
+		$d->AssetTag = $app->request->post('assettag');
+		$d->PrimaryIP = $app->request->post('primaryip');
+		$d->SNMPCommunity = $app->request->post('snmpcommunity');
+		$d->Position = $app->request->post('position');
+		$d->Height = $app->request->post('height');
+		$d->DeviceType = $app->request->post('devicetype');
+		$d->Cabinet = $app->request->post('cabinet');
+		$d->Owner = $app->request->post('owner');
 
-    // Slim Framework will simply return null for any variables that were not passed, so this is safe to call without blowing up the script
-    $d->Label = $app->request->post('label');
-    $d->SerialNo = $app->request->post('serialno');
-    $d->AssetTag = $app->request->post('assettag');
-    $d->PrimaryIP = $app->request->post('primaryip');
-    $d->SNMPCommunity = $app->request->post('snmpcommunity');
-    $d->Position = $app->request->post('position');
-    $d->Height = $app->request->post('height');
-    $d->DeviceType = $app->request->post('devicetype');
-    $d->Cabinet = $app->request->post('cabinet');
-    $d->Owner = $app->request->post('owner');
+		$d->CreateDevice();
 
-    $d->CreateDevice();
-
-    if ( $d->DeviceID == false ) {
-        $response['error'] = true;
-        $response['errorcode'] = 403;
-        $response['message'] = 'Unable to create Device resource with the given parameters.';
-        echoRespnse(403,$response);
-    } else {
-        $response['error'] = false;
-        $responde['errorcode'] = 200;
-        $response['message'] = 'Device resource created successfully.';
-        $response['device'] = array();
-        foreach( $d as $prop=>$value ) {
-            $tmp[$prop] = $value;
-        }
-        array_push( $response['device'], $tmp );
-        echoRespnse(200,$response);
-    }
+		if ( $d->DeviceID == false ) {
+			$response['error'] = true;
+			$response['errorcode'] = 403;
+			$response['message'] = 'Unable to create Device resource with the given parameters.';
+			echoRespnse(403,$response);
+		} else {
+			$response['error'] = false;
+			$responde['errorcode'] = 200;
+			$response['message'] = 'Device resource created successfully.';
+			$response['device'] = array();
+			foreach( $d as $prop=>$value ) {
+				$tmp[$prop] = $value;
+			}
+			array_push( $response['device'], $tmp );
+			echoRespnse(200,$response);
+		}
+	}
 });
 
 

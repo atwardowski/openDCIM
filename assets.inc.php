@@ -1790,6 +1790,22 @@ class Device {
 		return $dev;
 	}
 
+	function GetDeviceByAssetTag($AssetTag){
+		global $dbh;
+
+		$this->MakeSafe();
+
+		$sql="SELECT * FROM fac_Device WHERE AssetTag=\"%$AssetTag%\"";
+
+		$deviceList=array();
+
+		foreach($dbh->query($sql) as $deviceRow){
+			$deviceList[$deviceRow["DeviceID"]]=Device::RowToObject($deviceRow);
+		}
+
+		return $deviceList;
+	}
+
 	static function GetDevicesByTemplate($templateID) {
 		global $dbh;
 		
